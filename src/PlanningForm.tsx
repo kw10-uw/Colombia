@@ -440,7 +440,7 @@ export function PlanningForm({
           <div className="travel-times">
             <div>
               <h3>
-                Take off <span>Colombia time</span>
+                Departure <span>Colombia time</span>
               </h3>
               <Field label="Departure date">
                 <input
@@ -466,7 +466,7 @@ export function PlanningForm({
             </div>
             <div>
               <h3>
-                Touch down <span>Colombia time</span>
+                Arrival <span>Colombia time</span>
               </h3>
               <Field label="Arrival date">
                 <input
