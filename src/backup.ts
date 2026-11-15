@@ -1,6 +1,6 @@
 import { zipSync, unzipSync, strToU8, strFromU8 } from "fflate";
 import { getSnapshot, getFile, setFile, putRow } from "./store";
-import { isRow, id, now } from "./model";
+import { isRow, id, now, remapLinks } from "./model";
 export function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -78,7 +78,7 @@ export async function importBackup(file: File) {
       data: {
         ...original.data,
         cloudPath: undefined,
-        activityId: map.get(original.data.activityId) || undefined,
+        ...remapLinks(original.data, map),
       },
     };
     if (row.kind === "document") {

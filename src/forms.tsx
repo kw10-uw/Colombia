@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Check, Paperclip } from "lucide-react";
+import { Check, Paperclip, Wallet, FolderOpen, Compass } from "lucide-react";
 import {
   people,
   allocate,
@@ -165,6 +165,27 @@ export function EntityForm({
   }
   return (
     <form onSubmit={submit} className="entity-form">
+      <div className="form-story">
+        <span className="form-story-icon">
+          {isExpense ? <Wallet /> : isDocument ? <FolderOpen /> : <Compass />}
+        </span>
+        <div>
+          <strong>
+            {isExpense
+              ? "Good times, fair shares"
+              : isDocument
+                ? "Keep it in the trip pocket"
+                : "A little find worth keeping"}
+          </strong>
+          <p>
+            {isExpense
+              ? "Who got this one? Let’s split it with the right people."
+              : isDocument
+                ? "Put the confirmation with the plan, so it’s there when we need it."
+                : "A dish, a place, a tip from a friend—save the good stuff."}
+          </p>
+        </div>
+      </div>
       <Field
         label={
           kind === "destination"
@@ -468,7 +489,7 @@ export function EntityForm({
       )}
       {isDocument && (
         <>
-          <Field label="Attach to a plan, stay, or expense (optional)">
+          <Field label="Attach to a chapter, plan, journey, stay, or expense (optional)">
             <select
               value={data.activityId || ""}
               onChange={(e) => set("activityId", e.target.value)}
@@ -478,7 +499,13 @@ export function EntityForm({
                 .filter(
                   (r) =>
                     !r.deleted &&
-                    ["activity", "stay", "expense"].includes(r.kind),
+                    [
+                      "activity",
+                      "travel",
+                      "destination",
+                      "stay",
+                      "expense",
+                    ].includes(r.kind),
                 )
                 .map((r) => (
                   <option key={r.id} value={r.id}>

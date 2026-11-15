@@ -20,9 +20,13 @@ Source avatar PNGs and optimized WebP thumbnails are included. To regenerate the
 ## What works
 
 - Pick an avatar once; the browser remembers it. Switch travelers from the top-right avatar. This is contextual attribution, not a verified identity or fingerprinting.
-- Add, edit, remove, reorder, and date destinations. Add activities with dates, times, booking links, notes, and Planned / Booked / Done status. Change an activity’s date to move it to another day.
+- Plan by destination chapters: see the whole route or open one chapter with every day (including empty days) and its activities. Activities have dates, start/finish times, booking links, notes, and Planned / Booked / Done status. Change an activity’s day to reschedule it. Older city-only activities are grouped into their matching chapter; explicitly orphaned plans remain visible for reassignment.
+- Link multiple stays to a whole chapter or an individual plan item. Create a stay right from the plan, or link existing shortlist options. Stays retain their own dates, listing links, status, and documents.
+- Connect chapters with plane, bus, train, car, boat, or other travel legs. Keep departure/arrival dates and times, airports/stations, booking references, ticket links, and attached ticket files with the journey. Overnight journeys support a separate arrival date. Compare alternate ways of getting between the same chapters.
+- During the trip, the home page shows today’s plans, journeys, tickets, and booked stays. The day is calculated in `America/Bogota`, including on European phones. A dated activity, dated chapter, or configured trip date range makes the day a trip day.
 - Shortlist stays from any booking site; compare total prices, collect each traveler’s vote, and mark favorites or bookings.
 - A curated starter collection of regional foods linked to Reddit discussions, and sights linked to official visitor guides. Search/filter ideas, save new links and notes, and turn discoveries into plans. The app links out to Reddit searches; it does not automatically scrape Reddit or claim a live recommendation feed.
+- Explore → **Colombia, explained** contains country basics, population with a reference year, the five largest cities with city-boundary figures, and food/culture/history/nature curiosities. Concise original summaries and source labels work offline; external reading links need internet.
 - Attach PDFs, photos, HEIC files, or text documents (15 MB max) to activities, stays, or expenses. Download files to the device before traveling offline. Downloads retain the original format; HEIC display depends on device support.
 - Equal or custom expense shares, payer attribution, categories, four currencies, historical per-expense exchange rates, trip totals, budget tracking, exact-cent balances, suggested repayments, and payment recording. Payments are records only; the app does not move money.
 - Currency calculator with editable rates and optional refresh from ExchangeRate-API. Initial rates are explicitly illustrative. Existing expenses do not change when rates refresh.
@@ -38,6 +42,10 @@ One phone creates a shared trip using the Supabase project URL and public publis
 The backend checks membership and a record’s revision before accepting edits. Concurrent edits to the same record are shown in Settings for explicit resolution. This is record-level conflict handling, not collaborative character-by-character editing. Destination order changes are separate records; simultaneous route reorder actions may require manually adjusting the final order.
 
 Trip name, broad trip dates, budget, current traveler, and calculator rates are device preferences. Itinerary, destinations, ideas, stays/votes, documents, expenses, and settlements are shared records. Do not open a second independent trip on the same origin without first backing up; this version stores one trip per browser profile.
+
+Chapter dates include the first and last day. Stay dates use check-in/check-out; today’s home page labels checkout day separately. All activity and journey times in this version are Colombia local time (UTC−5); for an international departure in another timezone, convert it before entry and note the airport’s displayed local time in the journey notes.
+
+No local database reset is needed for the chapter update. Backups remap chapter, stay, journey, and ticket references when imported. If you installed the original Supabase schema already, run `supabase/migrations/002_travel.sql` once; otherwise the current `supabase/schema.sql` already includes travel records.
 
 ## Deploy to your GitHub repository
 

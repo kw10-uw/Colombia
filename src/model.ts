@@ -9,6 +9,7 @@ export type Currency = "COP" | "EUR" | "PLN" | "USD";
 export type Kind =
   | "destination"
   | "activity"
+  | "travel"
   | "stay"
   | "idea"
   | "document"
@@ -42,6 +43,17 @@ export type Data = {
   size?: number;
   cloudPath?: string;
   isStarter?: boolean;
+  chapterId?: string;
+  stayIds?: string[];
+  fromChapterId?: string;
+  toChapterId?: string;
+  mode?: string;
+  endTime?: string;
+  arrivalDate?: string;
+  arrivalTime?: string;
+  departurePlace?: string;
+  arrivalPlace?: string;
+  bookingRef?: string;
 };
 export type Row = {
   id: string;
@@ -200,6 +212,7 @@ export function newRow(kind: Kind, data: Data, by: Person): Row {
 export const kinds: Kind[] = [
   "destination",
   "activity",
+  "travel",
   "stay",
   "idea",
   "document",
@@ -219,4 +232,18 @@ export function isRow(value: unknown): value is Row {
     Number.isInteger(r.revision) &&
     typeof r.updatedAt === "string"
   );
+}
+export function remapLinks(
+  data: Data,
+  map: Map<string, string>,
+): Partial<Data> {
+  return {
+    activityId: map.get(data.activityId || "") || undefined,
+    chapterId: map.get(data.chapterId || "") || undefined,
+    fromChapterId: map.get(data.fromChapterId || "") || undefined,
+    toChapterId: map.get(data.toChapterId || "") || undefined,
+    stayIds: data.stayIds
+      ?.map((id) => map.get(id))
+      .filter((id): id is string => !!id),
+  };
 }

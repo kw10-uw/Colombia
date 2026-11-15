@@ -20,7 +20,7 @@ create table public.trip_members (
 create table public.trip_records (
  trip_id uuid not null references public.trips(id) on delete cascade,
  id uuid not null,
- kind text not null check(kind in ('destination','activity','stay','idea','document','expense','settlement')),
+ kind text not null check(kind in ('destination','activity','travel','stay','idea','document','expense','settlement')),
  data jsonb not null check(jsonb_typeof(data)='object' and jsonb_typeof(data->'title')='string' and length(data->>'title')<=180),
  "by" text not null check("by" in ('gaba','janek','konrad','julia')),
  updated_at timestamptz not null default now(),

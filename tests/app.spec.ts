@@ -22,17 +22,24 @@ test("plans, stays, votes, expenses, documents, backups, and mobile layouts", as
   await expect(page.getByRole("heading", { name: /¡Vamos/ })).toBeVisible();
   await page.getByRole("button", { name: /Make a plan/ }).click();
   let dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Name", { exact: true }).fill("Sunset in Getsemaní");
+  await dialog
+    .getByLabel("What are we doing?", { exact: true })
+    .fill("Sunset in Getsemaní");
   await dialog.getByLabel("Destination", { exact: true }).fill("Cartagena");
-  await dialog.getByLabel("Date", { exact: true }).fill("2027-02-12");
-  await dialog.getByLabel("Time", { exact: true }).fill("17:00");
+  await dialog.getByLabel("Which day?", { exact: true }).fill("2027-02-12");
+  await dialog.getByLabel("Start time", { exact: true }).fill("17:00");
+  await dialog
+    .getByText("Booking, finish time & the little details", { exact: true })
+    .click();
   await dialog.getByLabel("Notes (optional)").fill("Meet in the plaza.");
-  await dialog.getByRole("button", { name: "Add to the trip" }).click();
+  await dialog.getByRole("button", { name: "Add to our day" }).click();
   await nav(page, "Itinerary");
   await expect(page.locator(".plan-item")).toContainText("Sunset in Getsemaní");
   await page.getByRole("button", { name: "Edit Sunset in Getsemaní" }).click();
   dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Name", { exact: true }).fill("Sunset with the crew");
+  await dialog
+    .getByLabel("What are we doing?", { exact: true })
+    .fill("Sunset with the crew");
   await dialog.getByRole("button", { name: "Save changes" }).click();
   await page.reload();
   await nav(page, "Itinerary");
@@ -46,14 +53,15 @@ test("plans, stays, votes, expenses, documents, backups, and mobile layouts", as
     .click();
   dialog = page.getByRole("dialog");
   await dialog
-    .getByLabel("Name", { exact: true })
+    .getByLabel("What’s the place called?", { exact: true })
     .fill("Our Cartagena courtyard");
   await dialog.getByLabel("Destination", { exact: true }).fill("Cartagena");
   await dialog
     .getByLabel("Booking / Airbnb link")
     .fill("https://www.airbnb.com/rooms/123");
+  await dialog.getByText("Price & the little details", { exact: true }).click();
   await dialog.getByLabel("Total stay price (optional)").fill("300");
-  await dialog.getByRole("button", { name: "Add to the trip" }).click();
+  await dialog.getByRole("button", { name: "Save this stay" }).click();
   await page.getByRole("button", { name: "Vote for this" }).click();
   await expect(page.getByRole("button", { name: "Your pick" })).toHaveAttribute(
     "aria-pressed",
@@ -104,13 +112,11 @@ test("plans, stays, votes, expenses, documents, backups, and mobile layouts", as
     .click();
   dialog = page.getByRole("dialog");
   await dialog.getByLabel("Document name").fill("Flight confirmation");
-  await dialog
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "flight.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from("A test confirmation for the crew."),
-    });
+  await dialog.locator("input[type=file]").setInputFiles({
+    name: "flight.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("A test confirmation for the crew."),
+  });
   await dialog.getByRole("button", { name: "Save document" }).click();
   await expect(page.locator(".document-row")).toContainText(
     "Flight confirmation",
@@ -128,13 +134,11 @@ test("plans, stays, votes, expenses, documents, backups, and mobile layouts", as
   const backup = await downloadEvent;
   const backupPath = await backup.path();
   expect(backupPath).toBeTruthy();
-  await page
-    .locator(".upload-backup input")
-    .setInputFiles({
-      name: "trip.zip",
-      mimeType: "application/zip",
-      buffer: await fs.readFile(backupPath!),
-    });
+  await page.locator(".upload-backup input").setInputFiles({
+    name: "trip.zip",
+    mimeType: "application/zip",
+    buffer: await fs.readFile(backupPath!),
+  });
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Import backup", exact: true })
@@ -226,9 +230,11 @@ test("installed app shell, avatar, and saved plan survive an offline reload", as
   expect(loaded).toBe(true);
   await page.getByRole("button", { name: /Make a plan/ }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Name", { exact: true }).fill("Offline coffee stop");
+  await dialog
+    .getByLabel("What are we doing?", { exact: true })
+    .fill("Offline coffee stop");
   await dialog.getByLabel("Destination", { exact: true }).fill("Bogotá");
-  await dialog.getByRole("button", { name: "Add to the trip" }).click();
+  await dialog.getByRole("button", { name: "Add to our day" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.reload();
   await nav(page, "Itinerary");

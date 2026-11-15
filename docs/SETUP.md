@@ -8,6 +8,8 @@ Open [the Supabase dashboard](https://supabase.com/dashboard), create a project,
 
 In the project’s SQL Editor, run the complete contents of [`supabase/schema.sql`](../supabase/schema.sql) once. It creates trip/member/record tables, membership functions, revision-checked save functions, and a private `trip-documents` bucket with row-level security. The script is for a new project; running it twice will report existing objects.
 
+If you already ran the first version before the chapter/travel update, run only [`supabase/migrations/002_travel.sql`](../supabase/migrations/002_travel.sql) to allow travel-leg records. It preserves existing trip data.
+
 Enable **Anonymous Sign-Ins** in Authentication → Sign In / Providers (dashboard labels may vary). Each browser receives an anonymous account and retains its session locally, so you do not need a login page. If anonymous sign-in abuse protection requires CAPTCHA on your chosen project configuration, that flow needs additional configuration; this version does not include a CAPTCHA widget.
 
 Copy the project URL and its **publishable key** (or legacy `anon` key) from project settings. Never copy the `service_role`, `sb_secret_…`, database password, or management API token into the app. The UI rejects secret/service-role keys.

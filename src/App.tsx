@@ -96,6 +96,10 @@ import { exportBackup, importBackup, download } from "./backup";
 import { discoveries } from "./seeds";
 import { Avatar, Byline, Modal, Field, External, Empty } from "./components";
 import { EntityForm, type Editor } from "./forms";
+import PlanPage, { TodayPlan } from "./PlanPage";
+import { PlanningForm, editorTitle } from "./PlanningForm";
+import { colombiaDate, chapterFor, orderedChapters } from "./planning";
+import ColombiaGuide from "./ColombiaGuide";
 
 type Page =
   "crew" | "plan" | "stays" | "discover" | "documents" | "money" | "settings";
@@ -146,6 +150,12 @@ export default function App() {
   const sync = useSyncExternalStore(syncSubscribe, syncSnapshot);
   const [page, setPage] = useState<Page>("crew");
   const [city, setCity] = useState("All destinations");
+  const [planChapter, setPlanChapter] = useState("all");
+  const [today, setToday] = useState(colombiaDate());
+  useEffect(() => {
+    const timer = setInterval(() => setToday(colombiaDate()), 30000);
+    return () => clearInterval(timer);
+  }, []);
   const [editor, setEditor] = useState<Editor>();
   const [profile, setProfile] = useState(false);
   const [toast, setToast] = useState("");
@@ -286,13 +296,15 @@ export default function App() {
   const actions = (row: Row, extra?: ReactNode) => (
     <div className="item-actions">
       {extra}
-      {row.kind !== "settlement" && <button
-        className="icon-button"
-        aria-label={`Edit ${row.data.title}`}
-        onClick={() => edit(row.kind, row)}
-      >
-        <Pencil size={16} />
-      </button>}
+      {row.kind !== "settlement" && (
+        <button
+          className="icon-button"
+          aria-label={`Edit ${row.data.title}`}
+          onClick={() => edit(row.kind, row)}
+        >
+          <Pencil size={16} />
+        </button>
+      )}
       <button
         className="icon-button"
         aria-label={`Delete ${row.data.title}`}
@@ -513,6 +525,24 @@ export default function App() {
                   Colombia time <strong>{greeting()}</strong>
                 </span>
               </div>
+              <TodayPlan
+                rows={rows}
+                settings={settings}
+                today={today}
+                onOpen={() => {
+                  setPlanChapter("all");
+                  go("plan");
+                }}
+                docsFor={docsFor}
+                onDoc={(r) =>
+                  attached(r).length
+                    ? void openDoc(attached(r)[0])
+                    : edit("document", undefined, {
+                        activityId: r.id,
+                        city: r.data.city,
+                      })
+                }
+              />
               <div className="dashboard-grid">
                 <section className="welcome-card">
                   <div className="welcome-copy">
@@ -659,7 +689,10 @@ export default function App() {
                               className="icon-button"
                               aria-label={`View ${row.data.title}`}
                               onClick={() => {
-                                setCity(row.data.city || "All destinations");
+                                setPlanChapter(
+                                  chapterFor(row, orderedChapters(rows))?.id ||
+                                    "all",
+                                );
                                 go("plan");
                               }}
                             >
@@ -854,168 +887,85 @@ export default function App() {
                             : "Who paid, who owes, and who’s getting the next coffee."}
                   </p>
                 </div>
-                {page === "plan"
-                  ? addButton("activity", "Add a plan")
-                  : page === "stays"
-                    ? addButton("stay", "Save a stay")
-                    : page === "discover"
-                      ? addButton("idea", "Save an idea")
-                      : page === "documents"
-                        ? addButton("document", "Add a document")
-                        : addButton("expense", "Add an expense")}
+                {page === "plan" ? (
+                  <button
+                    className="button primary"
+                    onClick={() =>
+                      edit(
+                        "activity",
+                        undefined,
+                        planChapter !== "all"
+                          ? {
+                              chapterId: planChapter,
+                              city: stops.find((s) => s.id === planChapter)
+                                ?.data.title,
+                            }
+                          : {},
+                      )
+                    }
+                  >
+                    <Plus size={17} />
+                    Add a plan
+                  </button>
+                ) : page === "stays" ? (
+                  addButton("stay", "Save a stay")
+                ) : page === "discover" ? (
+                  addButton("idea", "Save an idea")
+                ) : page === "documents" ? (
+                  addButton("document", "Add a document")
+                ) : (
+                  addButton("expense", "Add an expense")
+                )}
               </div>
-              <div className="destination-filter">
-                <MapPin size={16} />
-                <label className="sr-only" htmlFor="city-filter">
-                  Filter by destination
-                </label>
-                <select
-                  id="city-filter"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                >
-                  <option>All destinations</option>
-                  {Array.from(
-                    new Set([
-                      ...stops.map((s) => s.data.title),
-                      ...(rows
-                        .map((r) => r.data.city)
-                        .filter(Boolean) as string[]),
-                    ]),
-                  ).map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-                <span>
-                  {city === "All destinations"
-                    ? "The whole adventure"
-                    : "Just this chapter"}
-                </span>
-              </div>
+              {page !== "plan" && (
+                <div className="destination-filter">
+                  <MapPin size={16} />
+                  <label className="sr-only" htmlFor="city-filter">
+                    Filter by destination
+                  </label>
+                  <select
+                    id="city-filter"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  >
+                    <option>All destinations</option>
+                    {Array.from(
+                      new Set([
+                        ...stops.map((s) => s.data.title),
+                        ...(rows
+                          .map((r) => r.data.city)
+                          .filter(Boolean) as string[]),
+                      ]),
+                    ).map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                  <span>
+                    {city === "All destinations"
+                      ? "The whole adventure"
+                      : "Just this chapter"}
+                  </span>
+                </div>
+              )}
             </>
           )}
           {page === "plan" && (
-            <>
-              <div className="section-heading">
-                <h2>The route</h2>
-                <button
-                  className="button subtle"
-                  onClick={() => edit("destination")}
-                >
-                  <Plus size={16} />
-                  Add a destination
-                </button>
-              </div>
-              <div className="route-grid">
-                {stops.map((row, i) => (
-                  <div className={`route-stop route-${i % 3}`} key={row.id}>
-                    <div className="row">
-                      <span className="eyebrow">
-                        CHAPTER {String(i + 1).padStart(2, "0")}
-                      </span>
-                      {i % 3 === 0 ? (
-                        <Mountain size={25} />
-                      ) : i % 3 === 1 ? (
-                        <Palmtree size={25} />
-                      ) : (
-                        <Sun size={25} />
-                      )}
-                    </div>
-                    <h3>{row.data.title}</h3>
-                    <p>
-                      {row.data.date
-                        ? `${formatDate(row.data.date)}${row.data.endDate ? ` – ${formatDate(row.data.endDate)}` : ""}`
-                        : "Dates to decide"}
-                    </p>
-                    {row.data.isStarter && (
-                      <span className="starter-label">
-                        Suggested stop · make it yours
-                      </span>
-                    )}
-                    <div className="row route-stop-bottom">
-                      <button
-                        className="text-link"
-                        onClick={() =>
-                          setCity(
-                            city === row.data.title
-                              ? "All destinations"
-                              : row.data.title,
-                          )
-                        }
-                      >
-                        {city === row.data.title
-                          ? "Show all"
-                          : "Explore this chapter"}
-                        <ArrowRight size={14} />
-                      </button>
-                      {actions(
-                        row,
-                        <>
-                          <button
-                            className="icon-button"
-                            aria-label={`Move ${row.data.title} earlier`}
-                            disabled={i === 0}
-                            onClick={() =>
-                              run(async () => {
-                                await editRow(row, { order: i - 1 });
-                                await editRow(stops[i - 1], { order: i });
-                              })
-                            }
-                          >
-                            <ArrowLeft size={14} />
-                          </button>
-                          <button
-                            className="icon-button"
-                            aria-label={`Move ${row.data.title} later`}
-                            disabled={i === stops.length - 1}
-                            onClick={() =>
-                              run(async () => {
-                                await editRow(row, { order: i + 1 });
-                                await editRow(stops[i + 1], { order: i });
-                              })
-                            }
-                          >
-                            <ArrowRight size={14} />
-                          </button>
-                        </>,
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {!stops.length && (
-                  <Empty
-                    icon={<Route />}
-                    title="Where shall we begin?"
-                    action={() => edit("destination")}
-                    label="Add our first destination"
-                  >
-                    A big city, a little village, or somewhere by the sea.
-                  </Empty>
-                )}
-              </div>
-              <PlanList
-                rows={filtered
-                  .filter((r) => r.kind === "activity")
-                  .sort(sortPlan)}
-                onEdit={(r) => edit("activity", r)}
-                onDelete={setConfirmDelete}
-                onDone={(r) =>
-                  run(() =>
-                    editRow(r, {
-                      status: r.data.status === "Done" ? "Planned" : "Done",
-                    }),
-                  )
-                }
-                onAddDoc={(r) =>
-                  edit("document", undefined, {
-                    activityId: r.id,
-                    city: r.data.city,
-                  })
-                }
-                docsFor={docsFor}
-                onAdd={() => edit("activity")}
-              />
-            </>
+            <PlanPage
+              rows={rows}
+              settings={settings}
+              onEdit={edit}
+              onDelete={setConfirmDelete}
+              docsFor={docsFor}
+              onDoc={(r) =>
+                edit("document", undefined, {
+                  activityId: r.id,
+                  city: r.data.city,
+                })
+              }
+              notify={notify}
+              initialChapter={planChapter}
+              onChapterChange={setPlanChapter}
+            />
           )}
           {page === "stays" && (
             <>
@@ -1302,11 +1252,8 @@ export default function App() {
         </div>
       )}
       {editor && (
-        <Modal
-          title={`${editor.row ? "Edit" : editor.kind === "document" ? "Attach" : "Add"} ${editor.kind === "activity" ? "a plan" : editor.kind === "expense" ? "an expense" : editor.kind === "idea" ? "an idea" : editor.kind === "stay" ? "a stay" : editor.kind === "destination" ? "a destination" : "a document"}`}
-          onClose={closeEditor}
-        >
-          <EntityForm
+        <Modal title={editorTitle(editor)} onClose={closeEditor}>
+          <EditorForm
             editor={editor}
             rows={rows}
             settings={settings}
@@ -1493,165 +1440,6 @@ function Profile({
   );
 }
 
-function PlanList({
-  rows,
-  onEdit,
-  onDelete,
-  onDone,
-  onAddDoc,
-  docsFor,
-  onAdd,
-}: {
-  rows: Row[];
-  onEdit: (r: Row) => void;
-  onDelete: (r: Row) => void;
-  onDone: (r: Row) => void;
-  onAddDoc: (r: Row) => void;
-  docsFor: (r: Row) => ReactNode;
-  onAdd: () => void;
-}) {
-  const [day, setDay] = useState("All days");
-  const dates = Array.from(
-    new Set(rows.map((r) => r.data.date || "Unscheduled")),
-  ).sort();
-  const shown =
-    day === "All days"
-      ? rows
-      : rows.filter((r) => (r.data.date || "Unscheduled") === day);
-  return (
-    <section className="plan-section">
-      <div className="section-heading">
-        <h2>The day-by-day</h2>
-        <span className="pill">
-          {rows.length} {rows.length === 1 ? "PLAN" : "PLANS"}
-        </span>
-      </div>
-      <div className="day-tabs">
-        <button
-          className={day === "All days" ? "selected" : ""}
-          onClick={() => setDay("All days")}
-        >
-          All days
-        </button>
-        {dates.map((date) => (
-          <button
-            key={date}
-            onClick={() => setDay(date)}
-            className={day === date ? "selected" : ""}
-          >
-            {date === "Unscheduled" ? "Still flexible" : formatDate(date)}
-          </button>
-        ))}
-      </div>
-      {!shown.length && (
-        <Empty
-          icon={<Sun />}
-          title="Leave room for a very good day"
-          action={onAdd}
-          label="Add a plan"
-        >
-          Add your first activity. Dates and times can come later.
-        </Empty>
-      )}
-      {Array.from(new Set(shown.map((r) => r.data.date || "Unscheduled"))).map(
-        (date) => (
-          <div key={date} className="day-group">
-            <div className="day-label">
-              <span className="day-dot" />
-              <h3>
-                {date === "Unscheduled" ? "Still flexible" : formatDate(date)}
-              </h3>
-              <span>
-                {date === "Unscheduled"
-                  ? "Ideas with a place in the plan"
-                  : "Colombia time"}
-              </span>
-            </div>
-            {shown
-              .filter((r) => (r.data.date || "Unscheduled") === date)
-              .map((row) => (
-                <article
-                  className={`plan-item ${row.data.status === "Done" ? "is-done" : ""}`}
-                  key={row.id}
-                >
-                  <div className="plan-time">
-                    {row.data.time || "Any time"}
-                    <span>
-                      {row.data.category === "Food" ? (
-                        <Utensils size={17} />
-                      ) : row.data.category === "Flight" ? (
-                        <Plane size={17} />
-                      ) : row.data.category === "Transport" ? (
-                        <Route size={17} />
-                      ) : (
-                        <MapPin size={17} />
-                      )}
-                    </span>
-                  </div>
-                  <div className="plan-detail">
-                    <div className="row">
-                      <h3>{row.data.title}</h3>
-                      <span
-                        className={`pill ${row.data.status === "Booked" ? "sage" : ""}`}
-                      >
-                        {row.data.status || "Planned"}
-                      </span>
-                    </div>
-                    <p className="muted">
-                      <MapPin size={13} />
-                      {row.data.city || "Destination to decide"} ·{" "}
-                      {row.data.category}
-                    </p>
-                    {row.data.notes && (
-                      <p className="item-notes">{row.data.notes}</p>
-                    )}
-                    <External url={row.data.url}>Details & booking</External>
-                    {docsFor(row)}
-                    <Byline person={row.by} />
-                  </div>
-                  <div className="plan-actions">
-                    <button
-                      className={`icon-button ${row.data.status === "Done" ? "done" : ""}`}
-                      aria-label={
-                        row.data.status === "Done"
-                          ? `Mark ${row.data.title} as planned`
-                          : `Mark ${row.data.title} as done`
-                      }
-                      onClick={() => onDone(row)}
-                    >
-                      <Check size={17} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      onClick={() => onAddDoc(row)}
-                      aria-label={`Attach document to ${row.data.title}`}
-                    >
-                      <Paperclip size={16} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      onClick={() => onEdit(row)}
-                      aria-label={`Edit ${row.data.title}`}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      onClick={() => onDelete(row)}
-                      aria-label={`Delete ${row.data.title}`}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </article>
-              ))}
-          </div>
-        ),
-      )}
-    </section>
-  );
-}
-
 function DocumentItem({
   row,
   link,
@@ -1665,10 +1453,18 @@ function DocumentItem({
 }) {
   const [cached, setCached] = useState(false);
   useEffect(() => {
-    let mounted=true;
-    const check=()=>{getFile(row.id).then((f)=>{if(mounted)setCached(!!f);});};
-    check();window.addEventListener('turbo:files',check);
-    return()=>{mounted=false;window.removeEventListener('turbo:files',check);};
+    let mounted = true;
+    const check = () => {
+      getFile(row.id).then((f) => {
+        if (mounted) setCached(!!f);
+      });
+    };
+    check();
+    window.addEventListener("turbo:files", check);
+    return () => {
+      mounted = false;
+      window.removeEventListener("turbo:files", check);
+    };
   }, [row]);
   return (
     <article className="document-row">
@@ -1757,195 +1553,214 @@ function Discover({
     <>
       <div className="discovery-controls">
         <div className="segmented">
-          {["For the curious", "Our saved ideas"].map((t) => (
-            <button
-              key={t}
-              className={tab === t ? "selected" : ""}
-              onClick={() => setTab(t)}
+          {["For the curious", "Our saved ideas", "Colombia, explained"].map(
+            (t) => (
+              <button
+                key={t}
+                className={tab === t ? "selected" : ""}
+                onClick={() => setTab(t)}
+              >
+                {t}
+                {t === "Our saved ideas" && <span>{saved.length}</span>}
+              </button>
+            ),
+          )}
+        </div>
+        {tab !== "Colombia, explained" && (
+          <div className="search-input">
+            <Search size={16} />
+            <label className="sr-only" htmlFor="idea-search">
+              Search discoveries
+            </label>
+            <input
+              id="idea-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="A dish, a city, a little adventure…"
+            />
+          </div>
+        )}
+      </div>
+      {tab === "Colombia, explained" ? (
+        <ColombiaGuide />
+      ) : (
+        <>
+          <div className="discovery-filters">
+            {["All", "Food", "Sight", "Experience"].map((c) => (
+              <button
+                key={c}
+                aria-pressed={category === c}
+                className={category === c ? "selected" : ""}
+                onClick={() => setCategory(c)}
+              >
+                {c === "All"
+                  ? "A little of everything"
+                  : c === "Food"
+                    ? "Worth a taste"
+                    : c === "Sight"
+                      ? "Worth a wander"
+                      : "Experiences"}
+              </button>
+            ))}
+          </div>
+          <div className="reddit-banner">
+            <span className="reddit-symbol">r/</span>
+            <div>
+              <strong>The good stuff, from real conversations.</strong>
+              <p>
+                Food ideas from Reddit, with original threads to explore.
+                Community tips are starting points—check current details.
+              </p>
+            </div>
+            <a
+              className="button secondary"
+              href={`https://www.reddit.com/search/?q=${encodeURIComponent(`${city === "All destinations" ? "Colombia" : city} local food recommendations`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              {t}
-              {t === "Our saved ideas" && <span>{saved.length}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="search-input">
-          <Search size={16} />
-          <label className="sr-only" htmlFor="idea-search">
-            Search discoveries
-          </label>
-          <input
-            id="idea-search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="A dish, a city, a little adventure…"
-          />
-        </div>
-      </div>
-      <div className="discovery-filters">
-        {["All", "Food", "Sight", "Experience"].map((c) => (
-          <button
-            key={c}
-            aria-pressed={category === c}
-            className={category === c ? "selected" : ""}
-            onClick={() => setCategory(c)}
-          >
-            {c === "All"
-              ? "A little of everything"
-              : c === "Food"
-                ? "Worth a taste"
-                : c === "Sight"
-                  ? "Worth a wander"
-                  : "Experiences"}
-          </button>
-        ))}
-      </div>
-      <div className="reddit-banner">
-        <span className="reddit-symbol">r/</span>
-        <div>
-          <strong>The good stuff, from real conversations.</strong>
-          <p>
-            Food ideas from Reddit, with original threads to explore. Community
-            tips are starting points—check current details.
-          </p>
-        </div>
-        <a
-          className="button secondary"
-          href={`https://www.reddit.com/search/?q=${encodeURIComponent(`${city === "All destinations" ? "Colombia" : city} local food recommendations`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Explore Reddit
-          <ArrowUpRight size={16} />
-        </a>
-      </div>
-      <div className="ideas-grid">
-        {tab === "For the curious"
-          ? suggestions.map((idea, i) => {
-              const already = allRows.some(
-                (r) => r.kind === "idea" && r.data.source === idea.id,
-              );
-              return (
-                <article className="idea-card" key={idea.id}>
-                  <div className={`idea-art idea-art-${i % 4}`}>
-                    <span>
-                      {idea.category === "Food" ? (
-                        <Utensils size={38} />
-                      ) : (
-                        <Mountain size={44} />
-                      )}
-                    </span>
-                    <span className="pill">{idea.city}</span>
-                    <span className="idea-doodle" aria-hidden="true">
-                      ✳
-                    </span>
-                  </div>
-                  <div className="idea-body">
-                    <span className="eyebrow">
-                      {idea.category === "Food"
-                        ? "WORTH A TASTE"
-                        : "WORTH A WANDER"}
-                    </span>
-                    <h3>{idea.title}</h3>
-                    <p>{idea.notes}</p>
-                    <External url={idea.url}>{idea.source}</External>
-                    {idea.sourceDate && (
-                      <span className="source-date">
-                        Thread researched {formatDate(idea.sourceDate)}
-                      </span>
-                    )}
-                    <div className="row idea-footer">
-                      <button
-                        className={`button ${already ? "subtle" : "secondary"}`}
-                        disabled={already}
-                        onClick={() =>
-                          run(
-                            () =>
-                              addRow("idea", {
+              Explore Reddit
+              <ArrowUpRight size={16} />
+            </a>
+          </div>
+          <div className="ideas-grid">
+            {tab === "For the curious"
+              ? suggestions.map((idea, i) => {
+                  const already = allRows.some(
+                    (r) => r.kind === "idea" && r.data.source === idea.id,
+                  );
+                  return (
+                    <article className="idea-card" key={idea.id}>
+                      <div className={`idea-art idea-art-${i % 4}`}>
+                        <span>
+                          {idea.category === "Food" ? (
+                            <Utensils size={38} />
+                          ) : (
+                            <Mountain size={44} />
+                          )}
+                        </span>
+                        <span className="pill">{idea.city}</span>
+                        <span className="idea-doodle" aria-hidden="true">
+                          ✳
+                        </span>
+                      </div>
+                      <div className="idea-body">
+                        <span className="eyebrow">
+                          {idea.category === "Food"
+                            ? "WORTH A TASTE"
+                            : "WORTH A WANDER"}
+                        </span>
+                        <h3>{idea.title}</h3>
+                        <p>{idea.notes}</p>
+                        <External url={idea.url}>{idea.source}</External>
+                        {idea.sourceDate && (
+                          <span className="source-date">
+                            Thread researched {formatDate(idea.sourceDate)}
+                          </span>
+                        )}
+                        <div className="row idea-footer">
+                          <button
+                            className={`button ${already ? "subtle" : "secondary"}`}
+                            disabled={already}
+                            onClick={() =>
+                              run(
+                                () =>
+                                  addRow("idea", {
+                                    title: idea.title,
+                                    city: idea.city,
+                                    category: idea.category,
+                                    notes: idea.notes,
+                                    url: idea.url,
+                                    source: idea.id,
+                                    sourceDate: idea.sourceDate,
+                                  }),
+                                `Saved ${idea.title} to the crew’s ideas.`,
+                              )
+                            }
+                          >
+                            {already ? (
+                              <Check size={15} />
+                            ) : (
+                              <Heart size={15} />
+                            )}{" "}
+                            {already ? "Saved" : "Save idea"}
+                          </button>
+                          <button
+                            className="icon-button"
+                            onClick={() =>
+                              onPlan({
                                 title: idea.title,
                                 city: idea.city,
                                 category: idea.category,
                                 notes: idea.notes,
                                 url: idea.url,
-                                source: idea.id,
-                                sourceDate: idea.sourceDate,
-                              }),
-                            `Saved ${idea.title} to the crew’s ideas.`,
-                          )
-                        }
-                      >
-                        {already ? <Check size={15} /> : <Heart size={15} />}{" "}
-                        {already ? "Saved" : "Save idea"}
-                      </button>
-                      <button
-                        className="icon-button"
-                        onClick={() =>
-                          onPlan({
-                            title: idea.title,
-                            city: idea.city,
-                            category: idea.category,
-                            notes: idea.notes,
-                            url: idea.url,
-                          })
-                        }
-                        aria-label={`Plan ${idea.title}`}
-                      >
-                        <CalendarDays size={19} />
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
-          : saved
-              .filter(
-                (r) =>
-                  (category === "All" || r.data.category === category) &&
-                  `${r.data.title} ${r.data.notes || ""} ${r.data.city || ""}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-              )
-              .map((row) => (
-                <article className="idea-card saved-idea" key={row.id}>
-                  <div className="idea-body">
-                    <div className="row">
-                      <span className="pill">
-                        {row.data.city || "Somewhere in Colombia"}
-                      </span>
-                      {actions(row)}
-                    </div>
-                    <h3>{row.data.title}</h3>
-                    <p>{row.data.notes || "A little something to explore."}</p>
-                    <External url={row.data.url}>Original source</External>
-                    <Byline person={row.by} />
-                    <button
-                      className="button secondary full"
-                      onClick={() => onPlan({ ...row.data, source: undefined })}
-                    >
-                      <CalendarDays size={16} />
-                      Add to the plan
-                    </button>
-                  </div>
-                </article>
-              ))}
-      </div>
-      {((tab === "For the curious" && !suggestions.length) ||
-        (tab === "Our saved ideas" && !saved.length)) && (
-        <Empty
-          icon={<Compass />}
-          title="Something good is waiting"
-          action={() => onAdd({})}
-          label="Save an idea"
-        >
-          Save a tip, a Reddit thread, or that place a friend told you about.
-        </Empty>
+                              })
+                            }
+                            aria-label={`Plan ${idea.title}`}
+                          >
+                            <CalendarDays size={19} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })
+              : saved
+                  .filter(
+                    (r) =>
+                      (category === "All" || r.data.category === category) &&
+                      `${r.data.title} ${r.data.notes || ""} ${r.data.city || ""}`
+                        .toLowerCase()
+                        .includes(query.toLowerCase()),
+                  )
+                  .map((row) => (
+                    <article className="idea-card saved-idea" key={row.id}>
+                      <div className="idea-body">
+                        <div className="row">
+                          <span className="pill">
+                            {row.data.city || "Somewhere in Colombia"}
+                          </span>
+                          {actions(row)}
+                        </div>
+                        <h3>{row.data.title}</h3>
+                        <p>
+                          {row.data.notes || "A little something to explore."}
+                        </p>
+                        <External url={row.data.url}>Original source</External>
+                        <Byline person={row.by} />
+                        <button
+                          className="button secondary full"
+                          onClick={() =>
+                            onPlan({ ...row.data, source: undefined })
+                          }
+                        >
+                          <CalendarDays size={16} />
+                          Add to the plan
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+          </div>
+          {((tab === "For the curious" && !suggestions.length) ||
+            (tab === "Our saved ideas" && !saved.length)) && (
+            <Empty
+              icon={<Compass />}
+              title="Something good is waiting"
+              action={() => onAdd({})}
+              label="Save an idea"
+            >
+              Save a tip, a Reddit thread, or that place a friend told you
+              about.
+            </Empty>
+          )}
+          <div className="research-note">
+            <CircleHelp size={17} />
+            <p>
+              This collection is curated, not a live Reddit feed. Find a useful
+              thread? Use “Save an idea” to keep its link and your notes.
+            </p>
+          </div>
+        </>
       )}
-      <div className="research-note">
-        <CircleHelp size={17} />
-        <p>
-          This collection is curated, not a live Reddit feed. Find a useful
-          thread? Use “Save an idea” to keep its link and your notes.
-        </p>
-      </div>
     </>
   );
 }
@@ -2844,5 +2659,15 @@ function TripSettings({
         </Modal>
       )}
     </>
+  );
+}
+
+function EditorForm(props: Parameters<typeof EntityForm>[0]) {
+  return ["destination", "activity", "travel", "stay"].includes(
+    props.editor.kind,
+  ) ? (
+    <PlanningForm {...props} />
+  ) : (
+    <EntityForm {...props} />
   );
 }

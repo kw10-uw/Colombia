@@ -61,6 +61,25 @@ export async function putRow(row: Row) {
   emit({ rows: [...snapshot.rows.filter((r) => r.id !== row.id), row] });
   return row;
 }
+export async function commitRows(
+  rows: Row[],
+  files: { id: string; blob: Blob }[] = [],
+) {
+  rows = rows.map((row) => ({
+    ...row,
+    by: snapshot.settings.person || row.by,
+  }));
+  const db = await dbPromise;
+  const tx = db.transaction(["rows", "files"], "readwrite");
+  for (const row of rows) await tx.objectStore("rows").put(row);
+  for (const file of files)
+    await tx.objectStore("files").put(file.blob, file.id);
+  await tx.done;
+  const ids = new Set(rows.map((r) => r.id));
+  emit({ rows: [...snapshot.rows.filter((r) => !ids.has(r.id)), ...rows] });
+  if (files.length && typeof window !== "undefined")
+    window.dispatchEvent(new Event("turbo:files"));
+}
 export async function addRow(kind: Kind, data: Data, person?: Person) {
   return putRow(
     newRow(kind, data, person || snapshot.settings.person || "konrad"),
@@ -78,7 +97,8 @@ export async function editRow(row: Row, data: Partial<Data>) {
 }
 export async function deleteRow(row: Row) {
   const latest = snapshot.rows.find((r) => r.id === row.id) || row;
-  if(row.kind === "document" && !snapshot.settings.cloud) await removeFile(row.id);
+  if (row.kind === "document" && !snapshot.settings.cloud)
+    await removeFile(row.id);
   return putRow({
     ...latest,
     deleted: true,
@@ -89,14 +109,16 @@ export async function deleteRow(row: Row) {
 }
 export async function setFile(rowId: string, file: Blob) {
   await (await dbPromise).put("files", file, rowId);
-  if(typeof window !== 'undefined')window.dispatchEvent(new Event('turbo:files'));
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("turbo:files"));
 }
 export async function getFile(rowId: string): Promise<Blob | undefined> {
   return (await dbPromise).get("files", rowId);
 }
 export async function removeFile(rowId: string) {
   await (await dbPromise).delete("files", rowId);
-  if(typeof window !== 'undefined')window.dispatchEvent(new Event('turbo:files'));
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("turbo:files"));
 }
 export async function replaceRows(rows: Row[], clearFiles = false) {
   const db = await dbPromise;

@@ -3659,28 +3659,79 @@ select {
 }
 
 /* Keep the supporting copy comfortably readable beside the playful headings. */
-.intro-copy { font-size:14px; color:#887087; }
-.quick-card div span, .compact-event div>span { font-size:11px; color:#92758b; }
-.feed-row p { font-size:12px; }
-.feed-row span { font-size:10px; }
-.muted { font-size:12px; color:#8d7386; }
-.byline { font-size:11px; color:#91768b; }
-.crew-note { font-size:11px; }
-.welcome-copy p { font-size:12px; }
-@media(max-width:760px) {
- .intro-copy { font-size:12px; }
- .dashboard-grid .crew-card { order:-1; }
- .welcome-copy { max-width:75%; padding:25px 23px; }
- .welcome-copy h2 { font-size:30px; }
- .welcome-copy p { font-size:11px; max-width:190px; }
- .welcome-card { min-height:310px; }
- .byline { font-size:10px; }
- .plan-detail>.muted { font-size:11px; }
+.intro-copy {
+  font-size: 14px;
+  color: #887087;
 }
-@media(max-width:350px) {
- .welcome-copy { max-width:76%; padding:23px 19px; }
- .welcome-copy h2 { font-size:26px; }
- .welcome-copy p { font-size:10px; max-width:166px; }
- .welcome-card { min-height:290px; }
- .byline { font-size:9px; }
+.quick-card div span,
+.compact-event div > span {
+  font-size: 11px;
+  color: #92758b;
+}
+.feed-row p {
+  font-size: 12px;
+}
+.feed-row span {
+  font-size: 10px;
+}
+.muted {
+  font-size: 12px;
+  color: #8d7386;
+}
+.byline {
+  font-size: 11px;
+  color: #91768b;
+}
+.crew-note {
+  font-size: 11px;
+}
+.welcome-copy p {
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .intro-copy {
+    font-size: 12px;
+  }
+  .dashboard-grid .crew-card {
+    order: -1;
+  }
+  .welcome-copy {
+    max-width: 75%;
+    padding: 25px 23px;
+  }
+  .welcome-copy h2 {
+    font-size: 30px;
+  }
+  .welcome-copy p {
+    font-size: 11px;
+    max-width: 190px;
+  }
+  .welcome-card {
+    min-height: 310px;
+  }
+  .byline {
+    font-size: 10px;
+  }
+  .plan-detail > .muted {
+    font-size: 11px;
+  }
+}
+@media (max-width: 350px) {
+  .welcome-copy {
+    max-width: 76%;
+    padding: 23px 19px;
+  }
+  .welcome-copy h2 {
+    font-size: 26px;
+  }
+  .welcome-copy p {
+    font-size: 10px;
+    max-width: 166px;
+  }
+  .welcome-card {
+    min-height: 290px;
+  }
+  .byline {
+    font-size: 9px;
+  }
 }
